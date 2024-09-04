@@ -1,211 +1,125 @@
 import pickle
-from datetime import datetime, date
-from enum import Enum, auto
+from datetime import datetime
 from collections import Counter
+from enum import Enum, auto
 
 
 class Employee:
-    def __init__(self, id_number, full_name, position,
-                 phone_number, email):
-        self.id = id_number
+    def __init__(self, employee_id, full_name, position, phone_number, email):
+        self.employee_id = employee_id
         self.full_name = full_name
         self.position = position
         self.phone_number = phone_number
         self.email = email
 
     def __repr__(self):
-        return (f"Employee - {self.full_name}, ID - {self.id}, "
-                f"Position - {self.position}, "
-                f"Phone Number - {self.phone_number}, "
+        return (f"Employee: ID - {self.employee_id}, Full name - {self.full_name}, "
+                f"Position - {self.position}, Phone - {self.phone_number}, "
                 f"Email - {self.email}")
 
 
 class Car:
-    def __init__(self, id_number, producer, model, release_date,
-                 cost, potential_sale_price):
-        self.id = id_number
+    def __init__(self, car_id, producer, model,
+                 release_year, cost, potential_sale_price):
+        self.car_id = car_id
         self.producer = producer
         self.model = model
-        self.release_date = release_date
+        self.release_year = release_year
         self.cost = cost
         self.potential_sale_price = potential_sale_price
 
     def __repr__(self):
-        return (f"Car - {self.id} - {self.producer} - {self.model}, "
-                f"Release - {self.release_date}, "
+        return (f"Car: ID - {self.car_id}, Producer - {self.producer}, "
+                f"Model - {self.model},  Release year - {self.release_year}, "
                 f"Cost - {self.cost}, "
-                f"Potential Sale Price - {self.potential_sale_price}")
+                f"Potential sale price - {self.potential_sale_price}")
 
 
 class Sale:
-    def __init__(self, employee: Employee, car: Car, sale_date, real_sale_price):
+    def __init__(self, employee: Employee, car: Car,
+                 sale_date, real_sale_price):
         self.employee = employee
         self.car = car
         self.sale_date = sale_date
         self.real_sale_price = real_sale_price
 
     def __repr__(self):
-        return (f"Sale {self.car} by {self.employee}, "
-                f"on {self.sale_date} for {self.real_sale_price}")
+        return (f"Sale: ID - {self.employee.employee_id}, Car - {self.car}, "
+                f"Sale date - {self.sale_date}, "
+                f"Real sale price - {self.real_sale_price}")
+
+
+class SaveDataToFile:
+    @staticmethod
+    def save_data_to_file(data, filename):
+        try:
+            with open(filename, 'wb') as file:
+                pickle.dump(data, file)
+                print(f"Data saved to {filename}")
+        except Exception as e:
+            print(f"Error saving file {filename}: {e}")
 
 
 class LoadDataFromFile:
-    def load_from_file(self, filename):
+    @staticmethod
+    def load_data_from_file(filename):
         try:
             with open(filename, 'rb') as file:
-                return pickle.load(file)
+                data = pickle.load(file)
+                print("Data loaded from file")
+                return data
         except FileNotFoundError:
             print(f"File {filename} not found")
             return None
         except Exception as e:
-            print(f"Error loading {filename}: {e}")
+            print(f"Error loading file {filename}: {e}")
             return None
-
-
-class SaveDataToFile:
-    def save_to_file(self, data, filename):
-        try:
-            with open(filename, 'wb') as file:
-                pickle.dump(data, file)
-        except Exception as e:
-            print(f"Error saving {filename}: {e}")
 
 
 class AutoSalon:
     def __init__(self):
-        self.open_file = LoadDataFromFile()
-        self.save_file = SaveDataToFile()
         self.employees = {}
         self.cars = {}
         self.sales = []
 
     def add_employee(self, employee: Employee):
-        self.employees[employee.id] = employee
+        self.employees[employee.employee_id] = employee
 
-    def remove_employee(self, employee_id):
-        if employee_id in self.employees:
-            del self.employees[employee_id]
+    def remove_employee(self, employee: Employee):
+        if employee.employee_id in self.employees:
+            del self.employees[employee.employee_id]
 
     def add_car(self, car: Car):
-        self.cars[car.id] = car
+        self.cars[car.car_id] = car
 
-    def remove_car(self, car_id):
-        if car_id in self.cars:
-            del self.cars[car_id]
+    def remove_car(self, car: Car):
+        if car.car_id in self.cars:
+            del self.cars[car.car_id]
 
     def register_sale(self, employee_id, car_id, sale_date, real_sale_price):
-        today = datetime.now().date()
-        date_obj = datetime.strptime(sale_date, "%Y-%m-%d").date()
-        if date_obj > today:
-            print("Sale date is in the future")
+        if employee_id not in self.employees or car_id not in self.cars:
+            print(f"Employee - {employee_id} or car - {car_id} not found")
             return None
 
-        if employee_id in self.employees and car_id in self.cars:
-            sale = Sale(self.employees[employee_id], self.cars[car_id], sale_date, real_sale_price)
-            self.sales.append(sale)
-            print("Registration successful")
-            del self.cars[car_id]
-            return sale
-        else:
-            print(f"Employee - {employee_id} "
-                  f"or Car - {car_id} not found")
-            return None
+        sale = Sale(self.employees[employee_id], self.cars[car_id],
+                    sale_date, real_sale_price)
+        self.sales.append(sale)
+        del self.cars[car_id]
+        print("Sale registered")
+        return sale
 
-    def get_most_sale_car(self, start_date, end_date):
-        sales_in_period = [sale for sale in self.sales if
-                           start_date <= sale.sale_date <= end_date]
-        if not sales_in_period:
-            return "No sales in this period"
-        models_sale = [sale.car.model for sale in sales_in_period]
-        most_sale_car = Counter(models_sale).most_common(1)[0][0]
-        return f"The most sale car is {most_sale_car}"
+    def save_data(self, filename):
+        data = {"employees": self.employees, "cars": self.cars, "sales": self.sales}
+        SaveDataToFile.save_data_to_file(data, filename)
 
-    def get_top_employee(self, start_date, end_date):
-        sales_in_period = [sale for sale in self.sales if
-                           start_date <= sale.sale_date <= end_date]
-        if not sales_in_period:
-            return "Na sales in this period"
-        employees_sale = Counter([sale.employee.full_name for sale in sales_in_period])
-        top_employee = employees_sale.most_common(1)[0][0]
-        return f"The top employee is {top_employee}"
 
-    def get_total_profit(self, start_date, end_date):
-        sales_in_period = [sale for sale in self.sales if
-                           start_date <= sale.sale_date <= end_date]
-        if not sales_in_period:
-            return "Na sales in this period"
-
-        total_sales_cost = sum(float(sale.car.cost) for sale in sales_in_period)
-        real_prices = sum(float(sale.real_sale_price) for sale in sales_in_period)
-        total_profit = real_prices - total_sales_cost
-        return total_profit
-
-    def generate_reports(self, report, date=None, start_date=None,
-                         end_date=None, employee_id=None):
-        if report == 'all_sales':
-            return self.sales
-        elif report == 'sales_by_period':
-            return [sale for sale in self.sales if
-                    start_date <= sale.sale_date <= end_date]
-        elif report == 'sales_by_employee':
-            return [sale for sale in self.sales if
-                    sale.employee.id == employee_id]
-        elif report == 'sales_by_date':
-            return [sale for sale in self.sales if
-                    sale.sale_date == date]
-        elif report == 'show_employees':
-            return list(self.employees.values())
-        elif report == 'show_cars':
-            return list(self.cars.values())
-        elif report == 'most_sale_car':
-            return self.get_most_sale_car(start_date, end_date)
-        elif report == 'top_employee':
-            return self.get_top_employee(start_date, end_date)
-        elif report == 'total_profit':
-            return self.get_total_profit(start_date, end_date)
-
-    def display_or_save_report(self, data):
-        choice = input("Would you like to Display(1) or Save(2) "
-                       "report? Enter 1 or 2: >> ")
-        if choice == '1':
-            return data
-        elif choice == '2':
-            filename = input("Enter filename to save the report: >> ")
-            self.save_file.save_to_file(data, filename)
-            print(f"Report saved to {filename}")
-
-    def save_all_data(self):
-        data = {
-            'employees': self.employees,
-            'cars': self.cars,
-            'sales': self.sales
-        }
-        self.save_file.save_to_file(data, "autosalon.pkl")
-        print("Data saved successfully to 'autosalon.pkl'")
-
-    def load_all_data(self):
-        data = self.open_file.load_from_file("autosalon.pkl")
+    def load_data(self, filename):
+        data = LoadDataFromFile.load_data_from_file(filename)
         if data:
             self.employees = data.get("employees", {})
             self.cars = data.get("cars", {})
             self.sales = data.get("sales", [])
-            print("Loaded all data")
-
-    def load_concrete_data(self, filename):
-        self.open_file.load_from_file(filename)
-
-
-class Menu(Enum):
-    ADD_EMPLOYEE = auto()
-    REMOVE_EMPLOYEE = auto()
-    ADD_CAR = auto()
-    REMOVE_CAR = auto()
-    REGISTER_SALE = auto()
-    SHOW_REPORTS = auto()
-    SAVE_ALL_DATA = auto()
-    LOAD_ALL_DATA = auto()
-    LOAD_CONCRETE_DATA = auto()
-    EXIT = auto()
+            print("Data loaded")
 
 
 class ReportsMenu(Enum):
@@ -221,193 +135,419 @@ class ReportsMenu(Enum):
     BACK = auto()
 
 
+class ReportGenerator:
+    def __init__(self, salon: AutoSalon):
+        self.salon = salon
+
+    def generate_report(self, report_type: ReportsMenu, date=None,
+                        start_date=None, end_date=None, employee_id=None):
+        if report_type == ReportsMenu.SHOW_EMPLOYEES:
+            return list(self.salon.employees.values())
+        elif report_type == ReportsMenu.SHOW_CARS:
+            return list(self.salon.cars.values())
+        elif report_type == ReportsMenu.SHOW_SALES:
+            return self.salon.sales
+        elif report_type == ReportsMenu.SHOW_REPORTS_BY_DATE:
+            return [sale for sale in self.salon.sales
+                    if sale.sale_date == date]
+        elif report_type == ReportsMenu.SHOW_SALES_IN_PERIOD:
+            return [sale for sale in self.salon.sales
+                    if start_date <= sale.sale_date <= end_date]
+        elif report_type == ReportsMenu.SHOW_SALES_BY_EMPLOYEE:
+            return [sale for sale in self.salon.sales
+                    if sale.employee_id == employee_id]
+        elif report_type == ReportsMenu.SHOW_MOST_SALE_CAR_IN_PERIOD:
+            return self.get_most_sale_car(start_date, end_date)
+        elif report_type == ReportsMenu.SHOW_TOP_EMPLOYEE_IN_PERIOD:
+            return self.get_top_employee(start_date, end_date)
+        elif report_type == ReportsMenu.SHOW_PROFIT_IN_PERIOD:
+            return self.get_total_profit(start_date, end_date)
+
+    def get_most_sale_car(self, start_date, end_date):
+        sales_in_period = [sale for sale in self.salon.sales
+                           if start_date <= sale.sale_date <= end_date]
+        if not sales_in_period:
+            return "No sales in period"
+
+        cars = [sale.car.model for sale in sales_in_period]
+        most_sale_car = Counter(cars).most_common(1)[0][0]
+        return f"Most sale car in period - {most_sale_car}"
+
+    def get_top_employee(self, start_date, end_date):
+        sales_in_period = [sale for sale in self.salon.sales
+                           if start_date <= sale.sale_date <= end_date]
+        if not sales_in_period:
+            return "No sales in period"
+
+        employee_sales = Counter([sale.employee.full_name for sale
+                                  in sales_in_period])
+        top_employee = employee_sales.most_common(1)[0][0]
+        return f"The top employee is {top_employee}"
+
+    def get_total_profit(self, start_date, end_date):
+        sales_in_period = [sale for sale in self.salon.sales
+                           if start_date <= sale.sale_date <= end_date]
+        if not sales_in_period:
+            return "No sales in period"
+
+        total_profit = sum(float(sale.real_sale_price) - float(sale.car.cost)
+                           for sale in sales_in_period)
+
+
+class ReportProcessor:
+    def __init__(self, report_generator: ReportGenerator):
+        self.report_generator = report_generator
+
+    def display_or_save_report(self, report_type: ReportsMenu, **kwargs):
+        report = self.report_generator.generate_report(report_type, **kwargs)
+        choice = input(
+            "Would you like to Display(1) or Save(2) "
+            "report? Enter 1 or 2: >> "
+        )
+
+        if choice == "1":
+            print(report)
+        elif choice == "2":
+            filename = input("Enter filename to save report")
+            SaveDataToFile.save_data_to_file(report, filename)
+        else:
+            print("Invalid choice")
+
+
+class Menu(Enum):
+    ADD_EMPLOYEE = auto()
+    REMOVE_EMPLOYEE = auto()
+    ADD_CAR = auto()
+    REMOVE_CAR = auto()
+    REGISTER_SALE = auto()
+    SHOW_REPORTS = auto()
+    SAVE_DATA = auto()
+    LOAD_DATA = auto()
+    EXIT = auto()
+
+
 class AutoSalonMenu:
     def __init__(self, salon):
         self.salon = salon
+        self.report_generator = ReportGenerator(salon)
+        self.report_processor = ReportProcessor(self.report_generator)
 
     def main_menu(self):
-        print("Main Menu!")
-        for item in Menu:
-            print(f"{item.value}. {item.name.replace('_', ' ').title()}")
-
+        print("Main menu:")
+        for menus in Menu:
+            print(f"{menus.value}. "
+                  f"{menus.name.replace("_", " ").title()}")
 
     def reports_menu(self):
-        print("Reports Menu!")
-        for item in ReportsMenu:
-            print(f"{item.value}. {item.name.replace('_', ' ').title()}")
+        print("Reports menu:")
+        print("1. Show employees\n"
+              "2. Show cars\n"
+              "3. Show sales\n"
+              "4. Show reports by date\n"
+              "5. Show sales in period\n"
+              "6. Show sales by employee\n"
+              "7. Show most sale car\n"
+              "8. Show top employee in period\n"
+              "9. Show profit in period\n"
+              "10. Back to main menu")
 
     def start(self):
         while True:
             self.main_menu()
             choice = int(input("Make your choice: >> "))
-            menu_choice = Menu(choice)
-
-            if menu_choice == Menu.ADD_EMPLOYEE:
-                employee_id = input(
-                    "Enter employee id (ID must be an integer): >> "
-                )
-                full_name = input(
-                    "Enter first and last name separated by a space: >> "
-                ).title()
-                position = input(
-                    "Enter the position of the employee: >> "
-                ).title()
-                phone_number = input(
-                    "Enter phone number of the employee: >> "
-                )
-                email = input("Enter email of the employee: >> ")
-                employee = Employee(employee_id, full_name, position, phone_number, email)
-                self.salon.add_employee(employee)
-                print("Employee added!")
-            elif menu_choice == Menu.REMOVE_EMPLOYEE:
-                id = input(
-                    "Enter employee id (ID must be an integer): >> "
-                )
-                self.salon.remove_employee(id)
-                print("Employee removed!")
-            elif menu_choice == Menu.ADD_CAR:
-                car_id = input(
-                    "Enter car id (ID must be an integer): >> "
-                )
-                producer = input(
-                    "Enter the name of the manufacturer: >> "
-                ).title()
-                model = input(
-                    "Enter the name of the model: >> "
-                ).title()
-                release_date = input(
-                    "Enter the release date in format YYYY: >> "
-                ).replace(" ", "-")
-                cost = input("Enter the cost of the car: >> ")
-                potential_sale_price = input(
-                    "Enter the potential sale price of the car: >> "
-                )
-                car = Car(car_id, producer, model, release_date, cost, potential_sale_price)
-                self.salon.add_car(car)
-                print("Car added!")
-            elif menu_choice == Menu.REMOVE_CAR:
-                car_id = input("Enter car id "
-                               "(ID must be an integer): >> ")
-                self.salon.remove_car(car_id)
-                print("Car removed!")
-            elif menu_choice == Menu.REGISTER_SALE:
-                employee_id = input(
-                    "Enter employee id (ID must be an integer): >> "
-                )
-                car_id = input(
-                    "Enter car id (ID must be an integer): >> "
-                )
-                sale_date = input(
-                    "Enter date of sale in format YYYY MM DD: >> "
-                ).replace(" ", "-")
-                real_sale_price = input(
-                    "Enter real sale price of the car "
-                    "(Must consist only of numbers without spaces): >> "
-                )
-                sale = self.salon.register_sale(
-                    employee_id, car_id, sale_date, real_sale_price
-                )
-                if sale:
-                    print(f"Sale registered \n {sale}")
-            elif menu_choice == Menu.SHOW_REPORTS:
+            if choice == Menu.ADD_EMPLOYEE.value:
+                self.add_employee()
+            elif choice == Menu.REMOVE_EMPLOYEE.value:
+                self.remove_employee()
+            elif choice == Menu.ADD_CAR.value:
+                self.add_car()
+            elif choice == Menu.REMOVE_CAR.value:
+                self.remove_car()
+            elif choice == Menu.REGISTER_SALE.value:
+                self.register_sale()
+            elif choice == Menu.SHOW_REPORTS.value:
                 self.show_reports()
-            elif menu_choice == Menu.SAVE_ALL_DATA:
-                self.salon.save_all_data()
-            elif menu_choice == Menu.LOAD_ALL_DATA:
-                self.salon.load_all_data()
-            elif menu_choice == Menu.LOAD_CONCRETE_DATA:
-                data = input("Enter filename to open: >> ")
-                self.salon.load_concrete_data(data)
-            elif menu_choice == Menu.EXIT:
-                print("Quiting the program")
+            elif choice == Menu.SAVE_DATA.value:
+                self.save_data()
+            elif choice == Menu.LOAD_DATA.value:
+                self.load_data()
+            elif choice == Menu.EXIT.value:
+                print("Exit")
                 break
+            else:
+                print("Invalid choice")
+
+    def add_employee(self):
+        employee_id = input(
+            "Enter employee ID "
+            "(ID must be an integer): >> "
+        )
+        full_name = input(
+            "Enter first and last name separated by a space: >> "
+        ).title()
+        position = input(
+            "Enter employee position: >> "
+        ).title()
+        phone_number = input(
+            "The number must contain only numbers"
+        )
+        email = input(
+            "Enter employee email: >> "
+        )
+
+        employee = Employee(employee_id, full_name, position,
+                            phone_number, email)
+        self.salon.add_employee(employee)
+        print(f"Employee {employee} added")
+
+    def remove_employee(self):
+        employee_id = input(
+            "Enter employee ID "
+            "(ID must be an integer): >> "
+        )
+
+        self.salon.remove_employee(employee_id)
+        print(f"Employee {employee_id} removed")
+
+    def add_car(self):
+        car_id = input(
+            "Enter car ID "
+            "(ID must be an integer): >> "
+        )
+        producer = input(
+            "Enter car producer: >> "
+        ).title()
+        model = input(
+            "Enter car model: >> "
+        ).title()
+        release_year = input(
+            "Enter car release year: >> "
+        )
+        cost = float(input(
+            "Enter car cost: >> "
+        ))
+        potential_sale_price = float(input(
+            "Enter car potential sale price: >> "
+        ))
+
+        car = Car(car_id, producer, model, release_year,
+                  cost, potential_sale_price)
+        self.salon.add_car(car)
+        print(f"Car {car} added")
+
+    def remove_car(self):
+        car_id = input(
+            "Enter car ID "
+            "(ID must be an integer): >> "
+        )
+        self.salon.remove_car(car_id)
+        print(f"Car {car_id} removed")
+
+    def register_sale(self):
+        employee_id = input(
+            "Enter employee ID "
+            "(ID must be an integer): >> "
+        )
+        car_id = input(
+            "Enter car ID "
+            "(ID must be an integer): >> "
+        )
+        sale_date = datetime.strptime(input(
+            "Enter date of sale "
+            "in format (YYYY-MM-DD): >> "
+        ), "%Y-%m-%d")
+        real_sale_price = float(input(
+            "Enter real sale price: >> "
+        ))
+
+        self.salon.register_sale(employee_id, car_id, sale_date, real_sale_price)
 
     def show_reports(self):
         while True:
             self.reports_menu()
-            choice = int(input("Make your choice: >> "))
-            report_choice = ReportsMenu(choice)
-
-            if report_choice == ReportsMenu.SHOW_EMPLOYEES:
-                data = self.salon.generate_reports("show_employees")
-                print(self.salon.display_or_save_report(data))
-            elif report_choice == ReportsMenu.SHOW_CARS:
-                data = self.salon.generate_reports("show_cars")
-                print(self.salon.display_or_save_report(data))
-            elif report_choice == ReportsMenu.SHOW_REPORTS_BY_DATE:
-                search_date = input(
-                    "Enter the start date in format YYYY MM DD: >> "
-                ).replace(" ", " ")
-                sales_by_date = self.salon.generate_reports_by_date(
-                    "sales_by_date"
-                    , date=search_date
+            choice = input("Enter your choice: ").strip()
+            if choice == '1':
+                self.report_processor.display_or_save_report(
+                    ReportsMenu.SHOW_EMPLOYEES
                 )
-                print(self.salon.display_or_save_report(sales_by_date))
-            elif report_choice == ReportsMenu.SHOW_SALES_IN_PERIOD:
-                start_date = input(
-                    "Enter the start date in format YYYY MM DD: >> "
-                ).replace(" ", "-")
-                end_date = input(
-                    "Enter the end date in format YYYY MM DD: >> "
-                ).replace(" ", "-")
-                data = self.salon.generate_reports(
-                    "sales_in_period",
-                    start_date=start_date, end_date=end_date
+            elif choice == '2':
+                self.report_processor.display_or_save_report(
+                    ReportsMenu.SHOW_CARS
                 )
-                print(self.salon.display_or_save_report(data))
-            elif report_choice == ReportsMenu.SHOW_SALES_BY_EMPLOYEE:
-                employee_id = input(
-                    "Enter employee id(ID must be an integer): >> "
+            elif choice == '3':
+                self.report_processor.display_or_save_report(
+                    ReportsMenu.SHOW_SALES
                 )
-                data = self.salon.generate_reports(
-                    "sales_by_employee", employee_id=employee_id
+            elif choice == '4':
+                date = datetime.strptime(input(
+                    "Enter date (YYYY-MM-DD): "), "%Y-%m-%d"
                 )
-                print(self.salon.display_or_save_report(data))
-            elif report_choice == ReportsMenu.SHOW_MOST_SALE_CAR_IN_PERIOD:
-                start_date = input(
-                    "Enter the start date in format YYYY MM DD: >> "
-                ).replace(" ", "-")
-                end_date = input(
-                    "Enter the end date in format YYYY MM DD: >> "
-                ).replace(" ", "-")
-                data = self.salon.generate_reports(
-                    "most_sale_car",
-                    start_date=start_date, end_date=end_date
+                self.report_processor.display_or_save_report(
+                    ReportsMenu.SHOW_REPORTS_BY_DATE, start_date=date
                 )
-                print(self.salon.display_or_save_report(data))
-            elif report_choice == ReportsMenu.SHOW_TOP_EMPLOYEE_IN_PERIOD:
-                start_date = input(
-                    "Enter the start date in format YYYY MM DD: >> "
-                ).replace(" ", "-")
-                end_date = input(
-                    "Enter the end date in format YYYY MM DD: >> "
-                ).replace(" ", "-")
-                data = self.salon.generate_reports(
-                    "top_employee",
-                    start_date=start_date, end_date=end_date
+            elif choice == '5':
+                start_date = datetime.strptime(input(
+                    "Enter start date (YYYY-MM-DD): "), "%Y-%m-%d"
                 )
-                print(self.salon.display_or_save_report(data))
-            elif report_choice == ReportsMenu.SHOW_PROFIT_IN_PERIOD:
-                start_date = input(
-                    "Enter the start date in format YYYY MM DD: >> "
-                ).replace(" ", "-")
-                end_date = input(
-                    "Enter the end date in format YYYY MM DD: >> "
-                ).replace(" ", "-")
-                data = self.salon.generate_reports(
-                    "total_profit",
-                    start_date=start_date, end_date=end_date
+                end_date = datetime.strptime(input(
+                    "Enter end date (YYYY-MM-DD): ").strip(), "%Y-%m-%d"
                 )
-                print(self.salon.display_or_save_report(data))
-            elif report_choice == ReportsMenu.BACK:
+                self.report_processor.display_or_save_report(
+                    ReportsMenu.SHOW_SALES_IN_PERIOD, start_date=start_date, end_date=end_date
+                )
+            elif choice == '6':
+                employee_id = input("Enter employee ID "
+                                    "(ID must be an integer): >> ")
+                self.report_processor.display_or_save_report(
+                    ReportsMenu.SHOW_SALES_BY_EMPLOYEE, employee_id=employee_id
+                )
+            elif choice == '7':
+                start_date = datetime.strptime(input(
+                    "Enter start date (YYYY-MM-DD): "), "%Y-%m-%d"
+                )
+                end_date = datetime.strptime(input(
+                    "Enter end date (YYYY-MM-DD): "), "%Y-%m-%d"
+                )
+                self.report_processor.display_or_save_report(
+                    ReportsMenu.SHOW_MOST_SALE_CAR_IN_PERIOD, start_date=start_date, end_date=end_date
+                )
+            elif choice == '8':
+                start_date = datetime.strptime(input(
+                    "Enter start date (YYYY-MM-DD): "), "%Y-%m-%d"
+                )
+                end_date = datetime.strptime(input(
+                    "Enter end date (YYYY-MM-DD): "), "%Y-%m-%d"
+                )
+                self.report_processor.display_or_save_report(
+                    ReportsMenu.SHOW_TOP_EMPLOYEE_IN_PERIOD, start_date=start_date, end_date=end_date
+                )
+            elif choice == '9':
+                start_date = datetime.strptime(input(
+                    "Enter start date (YYYY-MM-DD): "), "%Y-%m-%d"
+                )
+                end_date = datetime.strptime(input(
+                    "Enter end date (YYYY-MM-DD): "), "%Y-%m-%d"
+                )
+                self.report_processor.display_or_save_report(
+                    ReportsMenu.SHOW_PROFIT_IN_PERIOD, start_date=start_date, end_date=end_date
+                )
+            elif choice == '10':
                 break
             else:
-                print("Invalid choice")
-                continue
+                print("Invalid choice, please try again.")
+
+
+
+    def save_data(self):
+        filename = input(
+            "Enter filename to save data: >> "
+        )
+        self.salon.save_data(filename)
+
+    def load_data(self):
+        filename = input(
+            "Enter filename to load data: >> "
+        )
+        self.salon.load_data(filename)
 
 
 if __name__ == "__main__":
     salon = AutoSalon()
     menu = AutoSalonMenu(salon)
     menu.start()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
