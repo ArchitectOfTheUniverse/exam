@@ -14,7 +14,7 @@ class Employee:
 
     def __repr__(self):
         return (f"Employee: ID - {self.employee_id}, Full name - {self.full_name}, "
-                f"Position - {self.position}, Phone - {self.phone_number}, "
+                f"Position - {self.position}, Phone number - {self.phone_number}, "
                 f"Email - {self.email}")
 
 
@@ -30,7 +30,7 @@ class Car:
 
     def __repr__(self):
         return (f"Car: ID - {self.car_id}, Producer - {self.producer}, "
-                f"Model - {self.model},  Release year - {self.release_year}, "
+                f"Model - {self.model}, Release year - {self.release_year}, "
                 f"Cost - {self.cost}, "
                 f"Potential sale price - {self.potential_sale_price}")
 
