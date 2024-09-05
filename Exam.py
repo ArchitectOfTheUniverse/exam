@@ -44,7 +44,7 @@ class Sale:
         self.real_sale_price = real_sale_price
 
     def __repr__(self):
-        return (f"Sale: ID - {self.employee.employee_id}, Car - {self.car}, "
+        return (f"Sale: Employee - {self.employee.employee_id}, Car - {self.car}, "
                 f"Sale date - {self.sale_date}, "
                 f"Real sale price - {self.real_sale_price}")
 
@@ -73,6 +73,20 @@ class LoadDataFromFile:
             return None
         except Exception as e:
             print(f"Error loading file {filename}: {e}")
+            return None
+
+
+class DateValidator:
+    @staticmethod
+    def validate_date(input_date):
+        try:
+            if input_date > datetime.now():
+                print("Date entered is in the future")
+                return None
+            return input_date
+        except ValueError:
+            print("Date entered is not in the correct format. "
+                  "Enter date in format (YYYY-MM-DD)")
             return None
 
 
@@ -155,7 +169,7 @@ class ReportGenerator:
                     if start_date <= sale.sale_date <= end_date]
         elif report_type == ReportsMenu.SHOW_SALES_BY_EMPLOYEE:
             return [sale for sale in self.salon.sales
-                    if sale.employee_id == employee_id]
+                    if sale.employee.employee_id == employee_id]
         elif report_type == ReportsMenu.SHOW_MOST_SALE_CAR_IN_PERIOD:
             return self.get_most_sale_car(start_date, end_date)
         elif report_type == ReportsMenu.SHOW_TOP_EMPLOYEE_IN_PERIOD:
@@ -192,6 +206,7 @@ class ReportGenerator:
 
         total_profit = sum(float(sale.real_sale_price) - float(sale.car.cost)
                            for sale in sales_in_period)
+        return f"Total profit in period is: {total_profit}"
 
 
 class ReportProcessor:
@@ -365,7 +380,7 @@ class AutoSalonMenu:
     def show_reports(self):
         while True:
             self.reports_menu()
-            choice = input("Enter your choice: ").strip()
+            choice = input("Make your choice: >> ")
             if choice == '1':
                 self.report_processor.display_or_save_report(
                     ReportsMenu.SHOW_EMPLOYEES
@@ -380,56 +395,84 @@ class AutoSalonMenu:
                 )
             elif choice == '4':
                 date = datetime.strptime(input(
-                    "Enter date (YYYY-MM-DD): "), "%Y-%m-%d"
+                    "Enter date in format (YYYY-MM-DD): "),
+                    "%Y-%m-%d"
                 )
-                self.report_processor.display_or_save_report(
-                    ReportsMenu.SHOW_REPORTS_BY_DATE, start_date=date
-                )
+                validated_date = DateValidator.validate_date(date)
+                if validated_date:
+                    self.report_processor.display_or_save_report(
+                        ReportsMenu.SHOW_REPORTS_BY_DATE, date=date
+                    )
             elif choice == '5':
                 start_date = datetime.strptime(input(
-                    "Enter start date (YYYY-MM-DD): "), "%Y-%m-%d"
+                    "Enter start date in format (YYYY-MM-DD): "),
+                    "%Y-%m-%d"
                 )
+                validated_start_date = DateValidator.validate_date(start_date)
                 end_date = datetime.strptime(input(
-                    "Enter end date (YYYY-MM-DD): ").strip(), "%Y-%m-%d"
+                    "Enter end date in format (YYYY-MM-DD): "),
+                    "%Y-%m-%d"
                 )
-                self.report_processor.display_or_save_report(
-                    ReportsMenu.SHOW_SALES_IN_PERIOD, start_date=start_date, end_date=end_date
-                )
+                validated_end_date = DateValidator.validate_date(end_date)
+                if validated_start_date and validated_end_date:
+                    self.report_processor.display_or_save_report(
+                        ReportsMenu.SHOW_SALES_IN_PERIOD,
+                        start_date=start_date, end_date=end_date
+                    )
             elif choice == '6':
                 employee_id = input("Enter employee ID "
                                     "(ID must be an integer): >> ")
                 self.report_processor.display_or_save_report(
-                    ReportsMenu.SHOW_SALES_BY_EMPLOYEE, employee_id=employee_id
+                    ReportsMenu.SHOW_SALES_BY_EMPLOYEE,
+                    employee_id=employee_id
                 )
             elif choice == '7':
                 start_date = datetime.strptime(input(
-                    "Enter start date (YYYY-MM-DD): "), "%Y-%m-%d"
+                    "Enter start date in format (YYYY-MM-DD): "),
+                    "%Y-%m-%d"
                 )
+                validated_start_date = DateValidator.validate_date(start_date)
                 end_date = datetime.strptime(input(
-                    "Enter end date (YYYY-MM-DD): "), "%Y-%m-%d"
+                    "Enter end date in format (YYYY-MM-DD): "),
+                    "%Y-%m-%d"
                 )
-                self.report_processor.display_or_save_report(
-                    ReportsMenu.SHOW_MOST_SALE_CAR_IN_PERIOD, start_date=start_date, end_date=end_date
+                validated_end_date = DateValidator.validate_date(end_date)
+                if validated_start_date and validated_end_date:
+                    self.report_processor.display_or_save_report(
+                        ReportsMenu.SHOW_MOST_SALE_CAR_IN_PERIOD,
+                        start_date=start_date, end_date=end_date
                 )
             elif choice == '8':
                 start_date = datetime.strptime(input(
-                    "Enter start date (YYYY-MM-DD): "), "%Y-%m-%d"
+                    "Enter start date in format (YYYY-MM-DD): "),
+                    "%Y-%m-%d"
                 )
+                validated_start_date = DateValidator.validate_date(start_date)
                 end_date = datetime.strptime(input(
-                    "Enter end date (YYYY-MM-DD): "), "%Y-%m-%d"
+                    "Enter end date in format (YYYY-MM-DD): "),
+                    "%Y-%m-%d"
                 )
-                self.report_processor.display_or_save_report(
-                    ReportsMenu.SHOW_TOP_EMPLOYEE_IN_PERIOD, start_date=start_date, end_date=end_date
+                validated_end_date = DateValidator.validate_date(end_date)
+                if validated_start_date and validated_end_date:
+                    self.report_processor.display_or_save_report(
+                        ReportsMenu.SHOW_TOP_EMPLOYEE_IN_PERIOD,
+                        start_date=start_date, end_date=end_date
                 )
             elif choice == '9':
                 start_date = datetime.strptime(input(
-                    "Enter start date (YYYY-MM-DD): "), "%Y-%m-%d"
+                    "Enter start date in format (YYYY-MM-DD): "),
+                    "%Y-%m-%d"
                 )
+                validated_start_date = DateValidator.validate_date(start_date)
                 end_date = datetime.strptime(input(
-                    "Enter end date (YYYY-MM-DD): "), "%Y-%m-%d"
+                    "Enter end date in format (YYYY-MM-DD): "),
+                    "%Y-%m-%d"
                 )
-                self.report_processor.display_or_save_report(
-                    ReportsMenu.SHOW_PROFIT_IN_PERIOD, start_date=start_date, end_date=end_date
+                validated_end_date = DateValidator.validate_date(end_date)
+                if validated_start_date and validated_end_date:
+                    self.report_processor.display_or_save_report(
+                        ReportsMenu.SHOW_PROFIT_IN_PERIOD,
+                        start_date=start_date, end_date=end_date
                 )
             elif choice == '10':
                 break
@@ -455,99 +498,4 @@ if __name__ == "__main__":
     salon = AutoSalon()
     menu = AutoSalonMenu(salon)
     menu.start()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
